@@ -7,14 +7,14 @@ import (
 
 type msg struct {
 	next  *msg
-	value Value
+	value Valuer
 }
 
 // List - linked
 type List struct {
-	Root *msg // Pointer to root msg
-	len  int  // length of the list
-	ch   chan Value
+	Root *msg
+	len  int
+	ch   chan Valuer
 }
 
 // Len of list
@@ -23,9 +23,9 @@ func (l *List) Len() int {
 }
 
 // NewList points to pointer to a new list
-func NewList() *List {
+func newList() *List {
 	l := &List{
-		ch: make(chan Value),
+		ch: make(chan Valuer),
 	}
 	return l
 }
@@ -38,9 +38,8 @@ func (l *List) findLast() *msg {
 	return cur
 }
 
-func (l *List) append(v Value) {
+func (l *List) append(v Valuer) {
 	n := &msg{value: v}
-	l.len++
 	if l.Root == nil {
 		l.Root = n
 		return
@@ -51,17 +50,17 @@ func (l *List) append(v Value) {
 
 func (l *List) remove() (Value, error) {
 	if l.Root == nil {
-		return "", errors.New("Cannot remove from empty list")
+		return Value{}, errors.New("Cannot remove from empty list")
 	}
 	n := *l.Root
 	l.Root = n.next
 	n.next = nil // remove reference to next pointer
 	l.len--
-	return n.value, nil
+	return n.value.(Value), nil // Type assertion to check n.value is type Value
 }
 
 // Append to end of list
-func (l *List) Append(v Value) {
+func (l *List) Append(v Valuer) {
 	l.append(v)
 }
 
@@ -69,7 +68,7 @@ func (l *List) Append(v Value) {
 func (l *List) Remove() Value {
 	d, err := l.remove()
 	if err != nil {
-		return nil
+		return Value{}
 	}
 	return d
 }
@@ -83,35 +82,4 @@ func (l *List) String() string {
 		cur = cur.next
 	}
 	return fmt.Sprintf("%s, of lenght %d", data, l.len)
-}
-
-// Traverse the list
-func Traverse(l *List) <-chan Value {
-	cur := l.Root
-	rcv := make(chan Value)
-	go func(c *msg) {
-		defer close(rcv)
-		for c != nil {
-			rcv <- c.value
-			c = c.next
-		}
-	}(cur)
-	return rcv
-}
-
-// TraverseAndRemove from list till empty
-func TraverseAndRemove(l *List, done <-chan interface{}) <-chan Value {
-	rcv := make(chan Value)
-	go func() {
-		defer close(rcv)
-		for {
-			val := l.Remove()
-			select {
-			case rcv <- val:
-			case <-done:
-				return
-			}
-		}
-	}()
-	return rcv
 }
