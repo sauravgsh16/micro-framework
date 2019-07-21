@@ -3,7 +3,6 @@ package messagequeue
 import (
 	"errors"
 	"fmt"
-	_ "reflect"
 	"sync"
 )
 
@@ -50,12 +49,16 @@ func NewQueue() *Queue {
 // TODO: NEED TO IMPLEMENT MUTEX FOR WRITING TO AND READING FROM QUEUE
 // EnQueue
 func (q *Queue) EnQueue(v Valuer) {
+	q.mux.Lock()
 	q.list.Append(v)
+	q.mux.Unlock()
 }
 
 // DeQueue from queue
 func (q *Queue) DeQueue() (v Value, err error) {
+	q.mux.Lock()
 	v = q.list.Remove()
+	q.mux.Unlock()
 	if v == (Value{}) {
 		return Value{}, ErrEmptyQueue
 	}

@@ -2,6 +2,7 @@ package node
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/sauravgsh16/micro-framework/handler"
 	mq "github.com/sauravgsh16/micro-framework/messagequeue"
@@ -111,6 +112,7 @@ func (n *Node) AddReceiver(node Node, name string) error {
 		return err
 	}
 	q, ok := qr.(handler.Broadcaster)
+	reflect.TypeOf(qr)
 	fmt.Printf("%+v, %t, %t", q, qr, ok)
 	return nil
 }
